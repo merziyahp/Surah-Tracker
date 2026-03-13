@@ -233,6 +233,24 @@ body { font-family: 'Exo 2', sans-serif; background: var(--bg); color: var(--tex
 
 <script>
 const PIN = '5352';
+// Safe storage wrapper — falls back to in-memory if localStorage is blocked (private/incognito)
+const store = (() => {
+  let mem = {};
+  try {
+    localStorage.setItem('_test', '1');
+    localStorage.removeItem('_test');
+    return {
+      get: k => localStorage.getItem(k),
+      set: (k, v) => localStorage.setItem(k, v)
+    };
+  } catch(e) {
+    return {
+      get: k => mem[k] || null,
+      set: (k, v) => { mem[k] = v; }
+    };
+  }
+})();
+
 let isParent = false, pinBuf = '', activeFilter = 'all';
 
 function setFilter(f, el) {
@@ -246,14 +264,14 @@ function mkSurah(id, name, num, o) {
   return Object.assign({ id, name, num, arabicName:'', meaning:'', launched:false, retests:[false,false,false,false,false,false], lastRetestDate:null, repair:false, fuel:0, color:'#1565c0' }, o||{});
 }
 
-let data = JSON.parse(localStorage.getItem('smcv4')||'null') || [
+let data = JSON.parse(store.get('smcv4')||'null') || [
   mkSurah(1,'Al-Fatiha',1,  {arabicName:'الفاتحة', meaning:'The Opening', fuel:3, retests:[true,true,false,false,false,false], lastRetestDate:'2025-03-08'}),
   mkSurah(2,'Al-Ikhlas',112,{arabicName:'الإخلاص', meaning:'The Sincerity', launched:true, fuel:3, retests:[true,true,true,true,false,false], lastRetestDate:'2025-03-11', color:'#2e7d32'}),
   mkSurah(3,'Al-Falaq',113, {arabicName:'الفلق',   meaning:'The Daybreak',  fuel:1, repair:true, retests:[true,false,false,false,false,false], lastRetestDate:'2025-02-20', color:'#c62828'}),
   mkSurah(4,'An-Nas',114,   {arabicName:'الناس',   meaning:'Mankind',       fuel:2, retests:[true,true,false,false,false,false], lastRetestDate:'2025-03-05', color:'#e65100'}),
 ];
 
-function save() { localStorage.setItem('smcv4', JSON.stringify(data)); }
+function save() { store.set('smcv4', JSON.stringify(data)); }
 
 function status(s) {
   if (s.launched) return 'launched';
@@ -667,7 +685,7 @@ data.forEach(s => {
     if (ref) { s.arabicName = ref.ar; s.meaning = ref.meaning; }
   }
 });
-save();
+store.set('smcv4', JSON.stringify(data));
 render();
 </script>
 </body>
